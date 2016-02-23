@@ -1,0 +1,15 @@
+{
+  "name": "phm-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },  
+  "repository": "https://github.com/tabman83/phm-server.git",
+  "author": "Antonino Parisi <tabman83@gmail.com>",
+  "license" : "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "mongoose": "^4.4.4"
+  }
+}
