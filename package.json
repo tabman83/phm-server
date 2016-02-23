@@ -1,7 +1,7 @@
 {
   "name": "phm-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "API server and data persistence for personal-heating-manager",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
