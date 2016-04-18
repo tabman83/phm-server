@@ -1,9 +1,43 @@
 var mongoose = require('mongoose');
+var CronJob = require('cron').CronJob;
+var Hapi = require('hapi');
+var api = require('./api');
 
 var dbUrl = 'mongodb://' + (process.env.DB_HOST || 'localhost') + ':' + (process.env.DB_PORT || '27017') + '/personal-heating-manager';
+var server = null;
+
+var turnon = function(job, done) {
+	console.log('Turning ON at', new Date());
+}
+
+var turnoff = function(job, done) {
+	console.log('Turning OFF at', new Date());
+}
+
+var serverStarted = function(err) {
+	if(err) {
+		console.error('Failed to start server: ' + err.message);
+		gracefulExit();
+		return;
+	}
+	console.log('Server listening at ' + (process.env.ADDRESS || '0.0.0.0') + ':' + (process.env.PORT || 3000));
+}
 
 mongoose.connection.on('connected', function() {
 	console.log("Connected to " + dbUrl + ' db!');
+	server = new Hapi.Server();
+	server.connection({
+		address: process.env.ADDRESS || '0.0.0.0',
+		port: process.env.PORT || 3000
+	});
+	server.bind({
+		mongoose: mongoose,
+		CronJob: CronJob,
+		turnon: turnon,
+		turnoff: turnoff
+	});
+	api.register(server);
+	server.start(serverStarted);
 });
 
 mongoose.connection.on('error', function(err) {
@@ -16,7 +50,7 @@ mongoose.connection.on('disconnected', function () {
 	console.log('Mongoose default connection to db disconnected.');
 });
 
-var gracefulExit = function() { 
+var gracefulExit = function() {
 	mongoose.connection.close(function () {
 		console.log('Mongoose default connection to db is disconnected through app termination.');
 		process.exit(0);
@@ -25,18 +59,18 @@ var gracefulExit = function() {
 
 // If the Node process ends, close the Mongoose connection
 process.on('SIGINT', gracefulExit).on('SIGTERM', gracefulExit);
-  
+
 try {
 	mongoose.connect(dbUrl, {
 		user: process.env.DB_USERNAME || null,
 		pass: process.env.DB_PASSWORD || null,
 		server: {
-			socketOptions: { 
+			socketOptions: {
 				keepAlive: 120
 			}
 		},
 		replset: {
-			socketOptions: { 
+			socketOptions: {
 				keepAlive: 120
 			}
 		}
@@ -47,7 +81,7 @@ try {
 }
 
 var Sensor = mongoose.model('Sensor', {
-	device: { 
+	device: {
 		type: String,
 		required: true,
 		index: true
@@ -61,7 +95,7 @@ var Sensor = mongoose.model('Sensor', {
 		type: Number,
 		required: true
 	},
-	createdAt: { 
+	createdAt: {
 		type: Date,
 		default: Date.now,
 		index: true,
