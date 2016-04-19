@@ -5,6 +5,7 @@ var api = require('./api');
 
 var dbUrl = 'mongodb://' + (process.env.DB_HOST || 'localhost') + ':' + (process.env.DB_PORT || '27017') + '/personal-heating-manager';
 var server = null;
+var cronJobs = [];
 
 var turnon = function(job, done) {
 	console.log('Turning ON at', new Date());
@@ -38,7 +39,8 @@ mongoose.connection.on('connected', function() {
 		CronJob: CronJob,
 		turnon: turnon,
 		turnoff: turnoff,
-		Schedule: Schedule
+		Schedule: Schedule,
+		cronJobs: cronJobs
 	});
 	api.register(server);
 	server.start(serverStarted);

@@ -12,6 +12,7 @@ var routes = [{
         }
 
         var cronJob = null;
+        var cronJobs = this.cronJobs;
         var cronTime = request.payload.cronTime;
         try {
             cronJob = new this.CronJob({
@@ -36,6 +37,7 @@ var routes = [{
                 reply({ message: err.message }).code(500);
                 return;
             }
+            cronJobs.push(cronJob);
             console.log('Scheduled', request.payload.mode, 'with', cronTime, 'for timezone', request.payload.timezone);
             reply(doc);
         });
