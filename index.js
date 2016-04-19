@@ -25,7 +25,7 @@ var serverStarted = function(err) {
 }
 
 mongoose.connection.on('connected', function() {
-	console.log("Connected to " + dbUrl + ' db!');
+	console.log('Connected to', dbUrl);
 	server = new Hapi.Server();
 	server.connection({
 		address: process.env.ADDRESS || '0.0.0.0',
@@ -81,7 +81,7 @@ try {
 			}
 		}
 	});
-	console.log('Trying to connect to db ' + dbUrl);
+	console.log('Trying to connect to', dbUrl);
 } catch (err) {
 	console.log('Server initialization failed: ' + err.message);
 }
