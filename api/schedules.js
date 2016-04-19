@@ -14,7 +14,7 @@ var routes = [{
         var cronJob = null;
         var cronTime = request.payload.cronTime;
         try {
-            new this.CronJob({
+            cronJob = new this.CronJob({
                 cronTime: cronTime,
                 onTick: this[request.payload.mode],
                 start: true,
@@ -27,7 +27,8 @@ var routes = [{
 
         var schedule = new this.Schedule({
             mode: request.payload.mode,
-            cronTime: cronTime
+            cronTime: cronTime,
+            timezone: request.payload.timezone
         });
         schedule.save(function (err, doc) {
             if (err) {
@@ -35,11 +36,8 @@ var routes = [{
                 reply({ message: err.message }).code(500);
                 return;
             }
-            console.log('Scheduled', request.payload.mode, 'with', cronTime, 'for timezone' + request.payload.timezone);
-            reply({
-                id: doc._id,
-                message: 'success'
-            });
+            console.log('Scheduled', request.payload.mode, 'with', cronTime, 'for timezone', request.payload.timezone);
+            reply(doc);
         });
     }
 }, {
@@ -52,7 +50,7 @@ var routes = [{
                 return;
             }
             reply(docs);
-        })
+        });
     }
 }, {
 	method: 'GET',
@@ -64,7 +62,13 @@ var routes = [{
 	method: 'DELETE',
 	path: '/schedules/{id}',
 	handler: function(request, reply) {
-        reply({ message: 'success' });
+        this.Schedule.findByIdAndRemove(request.params.id, function(err, doc) {
+            if (err) {
+                reply({ message: err.message }).code(500);
+                return;
+            }
+            reply(doc);
+        });
     }
 }];
 

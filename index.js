@@ -89,9 +89,13 @@ var Schedule = mongoose.model('Schedule', {
 	mode: {
 		type: String,
 		required: true,
-		enum: ['turnon', 'turnon']
+		enum: ['turnon', 'turnoff']
 	},
 	cronTime: {
+		type: String,
+		required: true
+	},
+	timezone: {
 		type: String,
 		required: true
 	},
