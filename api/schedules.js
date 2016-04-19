@@ -2,7 +2,7 @@ var routes = [{
 	method: 'POST',
 	path: '/schedules',
 	handler: function(request, reply) {
-        if(typeof(request.payload.mode) === 'undefined' || typeof(request.payload.cronTime) === 'undefined') {
+        if(typeof(request.payload.mode) === 'undefined' || typeof(request.payload.cronTime) === 'undefined' || typeof(request.payload.timezone) === 'undefined') {
             reply({ message: 'Missing \'mode\' and \'cronTime\' parameters.' }).code(500);
             return;
         }
@@ -17,7 +17,8 @@ var routes = [{
             new this.CronJob({
                 cronTime: cronTime,
                 onTick: this[request.payload.mode],
-                start: true
+                start: true,
+                timeZone: request.payload.timezone
             });
         } catch(ex) {
             reply({ message: 'cron pattern not valid.' }).code(500);
@@ -34,7 +35,7 @@ var routes = [{
                 reply({ message: err.message }).code(500);
                 return;
             }
-            console.log('Scheduled', request.payload.mode, 'with', cronTime);
+            console.log('Scheduled', request.payload.mode, 'with', cronTime, 'for timezone' + request.payload.timezone);
             reply({
                 id: doc._id,
                 message: 'success'
