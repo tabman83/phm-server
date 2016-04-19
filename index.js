@@ -28,13 +28,17 @@ mongoose.connection.on('connected', function() {
 	server = new Hapi.Server();
 	server.connection({
 		address: process.env.ADDRESS || '0.0.0.0',
-		port: process.env.PORT || 3000
+		port: process.env.PORT || 3000,
+		routes: {
+            cors: true
+        }
 	});
 	server.bind({
 		mongoose: mongoose,
 		CronJob: CronJob,
 		turnon: turnon,
-		turnoff: turnoff
+		turnoff: turnoff,
+		Schedule: Schedule
 	});
 	api.register(server);
 	server.start(serverStarted);
@@ -79,6 +83,25 @@ try {
 } catch (err) {
 	console.log('Server initialization failed: ' + err.message);
 }
+
+
+var Schedule = mongoose.model('Schedule', {
+	mode: {
+		type: String,
+		required: true,
+		enum: ['turnon', 'turnon']
+	},
+	cronTime: {
+		type: String,
+		required: true
+	},
+	createdAt: {
+		type: Date,
+		default: Date.now,
+		index: true,
+		required: true
+	}
+});
 
 var Sensor = mongoose.model('Sensor', {
 	device: {
