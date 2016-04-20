@@ -50,7 +50,7 @@ var routes = [{
 	path: '/schedules',
 	handler: function(request, reply) {
         this.Schedule.find(function(err, docs) {
-            if (err) {
+            if(err) {
                 reply({ message: err.message }).code(500);
                 return;
             }
@@ -58,10 +58,31 @@ var routes = [{
         });
     }
 }, {
-	method: 'GET',
+	method: 'PUT',
 	path: '/schedules/{id}',
 	handler: function(request, reply) {
-        reply({ message: 'success' });
+        var cronJobs = this.cronJobs;
+        this.Schedule.findByIdAndUpdate(request.params.id, request.payload, {
+            new: true
+        }, function(err, doc) {
+            if(err) {
+                reply({ message: err.message }).code(500);
+                return;
+            }
+            for(var i = 0; i < cronJobs.length; i++) {
+                if(cronJobs[i].id === doc._id) {
+                    cronJobs[i].cronJob.stop();
+                    cronJobs[i].cronJob = new this.CronJob({
+                        cronTime: doc.cronTime,
+                        onTick: this[doc.mode],
+                        start: !doc.paused,
+                        timeZone: doc.timezone
+                    });
+                    break;
+                }
+            }
+            reply(doc);
+        });
     }
 }, {
 	method: 'DELETE',
