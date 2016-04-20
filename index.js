@@ -26,6 +26,28 @@ var serverStarted = function(err) {
 
 mongoose.connection.on('connected', function() {
 	console.log('Connected to', dbUrl);
+
+	Schedule.find(function(err, docs) {
+		if (err) {
+			console.log(err.message);
+			gracefulExit();
+			return;
+		}
+		docs.forEach(function(doc) {
+			var cronJob = new CronJob({
+                cronTime: doc.cronTime,
+                onTick: doc.mode === 'turnon' ? turnon : turnoff,
+                start: !doc.paused,
+                timeZone: doc.timezone
+            });
+			cronJobs.push({
+				id: doc._id,
+				cronJob: cronJob
+			});
+		});
+	});
+
+
 	server = new Hapi.Server();
 	server.connection({
 		address: process.env.ADDRESS || '0.0.0.0',
@@ -99,6 +121,11 @@ var Schedule = mongoose.model('Schedule', {
 	},
 	timezone: {
 		type: String,
+		required: true
+	},
+	paused: {
+		type: Boolean,
+		default: false,
 		required: true
 	},
 	createdAt: {

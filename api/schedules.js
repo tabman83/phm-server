@@ -37,7 +37,10 @@ var routes = [{
                 reply({ message: err.message }).code(500);
                 return;
             }
-            cronJobs.push(cronJob);
+            cronJobs.push({
+                id: doc._id,
+                cronJob: cronJob
+            });
             console.log('Scheduled', request.payload.mode, 'with', cronTime, 'for timezone', request.payload.timezone);
             reply(doc);
         });
@@ -64,10 +67,18 @@ var routes = [{
 	method: 'DELETE',
 	path: '/schedules/{id}',
 	handler: function(request, reply) {
+        var cronJobs = this.cronJobs;
         this.Schedule.findByIdAndRemove(request.params.id, function(err, doc) {
             if (err) {
                 reply({ message: err.message }).code(500);
                 return;
+            }
+            for (var i = 0; i < cronJobs.length; i++) {
+                if(cronJobs[i]._id === doc._id) {
+                    cronJobs[i].stop();
+                    cronJobs.splice(i, 1);
+                    break;
+                }
             }
             reply(doc);
         });
