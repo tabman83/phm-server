@@ -1,18 +1,23 @@
 var mongoose = require('mongoose');
 var CronJob = require('cron').CronJob;
 var Hapi = require('hapi');
+var mqtt = require('mqtt');
+
 var api = require('./api');
 
 var dbUrl = 'mongodb://' + (process.env.DB_HOST || 'localhost') + ':' + (process.env.DB_PORT || '27017') + '/personal-heating-manager';
 var server = null;
 var cronJobs = [];
+var mqttClient = null;
 
 var turnon = function(job, done) {
 	console.log('Turning ON at', new Date());
+	mqttClient.publish('phm/actuators', 'ON');
 }
 
 var turnoff = function(job, done) {
 	console.log('Turning OFF at', new Date());
+	mqttClient.publish('phm/actuators', 'OFF');
 }
 
 var serverStarted = function(err) {
@@ -27,45 +32,63 @@ var serverStarted = function(err) {
 mongoose.connection.on('connected', function() {
 	console.log('Connected to', dbUrl);
 
-	Schedule.find(function(err, docs) {
-		if (err) {
-			console.log(err.message);
-			gracefulExit();
-			return;
-		}
-		docs.forEach(function(doc) {
-			var cronJob = new CronJob({
-                cronTime: doc.cronTime,
-                onTick: doc.mode === 'turnon' ? turnon : turnoff,
-                start: !doc.paused,
-                timeZone: doc.timezone
-            });
-			cronJobs.push({
-				id: doc._id,
-				cronJob: cronJob
+	var mqttUrl = 'mqtt://' + process.env.MQTT_HOSTNAME + ':' + (process.env.MQTT_PORT || 1883);
+	console.log('Trying to connect to the MQTT broker');
+	mqttClient = mqtt.connect(mqttUrl, {
+        username: process.env.MQTT_USERNAME,
+        password: process.env.MQTT_PASSWORD
+    });
+
+	mqttClient.on('error', function (error) {
+		console.log(error);
+		gracefulExit();
+		return;
+	});
+
+	mqttClient.on('connect', function () {
+		console.log('Connected to the MQTT broker.');
+
+		Schedule.find(function(err, docs) {
+			if (err) {
+				console.log(err.message);
+				gracefulExit();
+				return;
+			}
+			docs.forEach(function(doc) {
+				var cronJob = new CronJob({
+	                cronTime: doc.cronTime,
+	                onTick: doc.mode === 'turnon' ? turnon : turnoff,
+	                start: !doc.paused,
+	                timeZone: doc.timezone
+	            });
+				cronJobs.push({
+					id: doc._id,
+					cronJob: cronJob
+				});
 			});
 		});
-	});
 
 
-	server = new Hapi.Server();
-	server.connection({
-		address: process.env.ADDRESS || '0.0.0.0',
-		port: process.env.PORT || 3000,
-		routes: {
-            cors: true
-        }
+		server = new Hapi.Server();
+		server.connection({
+			address: process.env.ADDRESS || '0.0.0.0',
+			port: process.env.PORT || 3000,
+			routes: {
+	            cors: true
+	        }
+		});
+		server.bind({
+			mongoose: mongoose,
+			CronJob: CronJob,
+			turnon: turnon,
+			turnoff: turnoff,
+			Schedule: Schedule,
+			cronJobs: cronJobs
+		});
+		api.register(server);
+		server.start(serverStarted);
 	});
-	server.bind({
-		mongoose: mongoose,
-		CronJob: CronJob,
-		turnon: turnon,
-		turnoff: turnoff,
-		Schedule: Schedule,
-		cronJobs: cronJobs
-	});
-	api.register(server);
-	server.start(serverStarted);
+
 });
 
 mongoose.connection.on('error', function(err) {

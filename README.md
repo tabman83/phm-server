@@ -3,6 +3,9 @@
 API server and data persistence for personal-heating-manager.
 
 ## Environment variables
+- MQTT_HOSTNAME name of the mqtt broker host
+- MQTT_USERNAME username to connect to the mqtt broker
+- MQTT_PASSWORD password to connect to the mqtt broker
 - MQTT_PORT (optional) changes the default port MQTT will run
 - DB_HOST (optional) database host name
 - DB_PORT (optional) database host port
